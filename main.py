@@ -16,10 +16,48 @@
 #
 import webapp2
 
-class MainHandler(webapp2.RequestHandler):
+import cgi
+
+#html boilder plate for top of page
+
+page_header = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Sign Up</title>
+</head>
+<body>
+    <h1>Signup</h1>
+"""
+#html boilerplate for bottom of page
+page_footer = """
+</body>
+</html>
+"""
+class Index(webapp2.RequestHandler):
+
     def get(self):
-        self.response.write('Hello world!')
+    #create form
+        signup_form="""
+        <form action="/signup" method="post">
+        <label for="username">Username: </label>
+        <input name="username" type="text">
+        <br>
+        <label for="password">Password: </label>
+        <input name="password" type="password">
+        <br>
+        <label for="verify">Verify Password: </label>
+        <input name="verify" type="password">
+        <br>
+        <label for="email">Email Address: </label>
+        <input name="email" type="text">
+        <br>
+        <input type="submit" value="Submit">
+        </form>
+        """
+        main_content = page_header + signup_form + page_footer
+        self.response.write(main_content)
 
 app = webapp2.WSGIApplication([
-    ('/', MainHandler)
+    ('/', Index)
 ], debug=True)
