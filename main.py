@@ -18,6 +18,10 @@ import webapp2
 
 import cgi
 
+#declare error
+error = ""
+username=""
+email=""
 #html boilder plate for top of page
 
 page_header = """
@@ -29,35 +33,91 @@ page_header = """
 <body>
     <h1>Signup</h1>
 """
+
+#create form
+signup_form="""
+    <form action="/signup" method="post">
+        <table>
+            <tr>
+                <td>
+                    <label for="username">Username: </label>
+                </td>
+                <td>
+                    <input name="username" type="text" value="%(username)s"/>
+                </td>
+                <td><div style="color: red">%(error)s</div></td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="password">Password: </label>
+                </td>
+                <td>
+                    <input name="password" type="password" />
+                    <span class="error"></span>
+            </tr>
+            <tr>
+                <td>
+                    <label for="verify">Verify Password: </label>
+                </td>
+                <td>
+                    <input name="verify" type="password" />
+                    <span class="error"></span>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <label for="email">Email Address: </label>
+                </td>
+                <td>
+                    <input name="email" type="text" value="%(email)s" />
+                    <span class="error"></span>
+                </td>
+            </tr>
+        </table>
+        <input type="submit" value="Submit">
+    </form>
+    """ % {"error": error, "username":username, "email":email}
+
+
+
+
 #html boilerplate for bottom of page
 page_footer = """
 </body>
 </html>
 """
 class Index(webapp2.RequestHandler):
-
+    #print header and form
     def get(self):
-    #create form
-        signup_form="""
-        <form action="/signup" method="post">
-        <label for="username">Username: </label>
-        <input name="username" type="text">
-        <br>
-        <label for="password">Password: </label>
-        <input name="password" type="password">
-        <br>
-        <label for="verify">Verify Password: </label>
-        <input name="verify" type="password">
-        <br>
-        <label for="email">Email Address: </label>
-        <input name="email" type="text">
-        <br>
-        <input type="submit" value="Submit">
-        </form>
-        """
-        main_content = page_header + signup_form + page_footer
+        main_content = page_header + signup_form + error + page_footer
         self.response.write(main_content)
 
+class Signup(webapp2.RequestHandler):
+
+    #take in data
+    def post(self):
+        username = self.request.get("username")
+        password = self.request.get("password")
+        verify = self.request.get("verify")
+        email = self.request.get("email")
+
+        #escape out html
+        username = cgi.escape(username, quote=True)
+        password = cgi.escape(password, quote=True)
+        verify = cgi.escape(verify, quote=True)
+        email = cgi.escape(email,quote=True)
+
+
+        #error no user name
+        if username == "":
+            global error
+            error = "That's not a valid username"
+            self.response.write(page_header + signup_form + page_footer)
+            #getting blank form
+
+
+
 app = webapp2.WSGIApplication([
-    ('/', Index)
+    ('/', Index),
+    ('/signup', Signup)
 ], debug=True)
