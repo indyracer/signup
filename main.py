@@ -18,10 +18,9 @@ import webapp2
 
 import cgi
 
-#declare error
-error = ""
-username=""
-email=""
+import re
+
+
 #html boilder plate for top of page
 
 page_header = """
@@ -31,12 +30,15 @@ page_header = """
     <title>Sign Up</title>
 </head>
 <body>
-    <h1>Signup</h1>
+
 """
 
 #create form
-signup_form="""
+
+def render_signup_form(substitions):
+    return """
     <form action="/signup" method="post">
+    <h1>Signup</h1>
         <table>
             <tr>
                 <td>
@@ -45,23 +47,27 @@ signup_form="""
                 <td>
                     <input name="username" type="text" value="%(username)s"/>
                 </td>
-                <td><div style="color: red">%(error)s</div></td>
+                <td><div style="color: red">%(error_username)s</div></td>
             </tr>
             <tr>
                 <td>
                     <label for="password">Password: </label>
                 </td>
                 <td>
-                    <input name="password" type="password" />
-                    <span class="error"></span>
+                    <input name="password" type="password" value="%(password)s" />
+                <td>
+                <td>
+                    <div style="color: red">%(error_password)s</div>
             </tr>
             <tr>
                 <td>
                     <label for="verify">Verify Password: </label>
                 </td>
                 <td>
-                    <input name="verify" type="password" />
-                    <span class="error"></span>
+                    <input name="verify" type="password" value="%(verify)s"/>
+                </td>
+                <td>
+                    <div style="color: red">%(error_verify)s</s>
                 </td>
             </tr>
             <tr>
@@ -70,13 +76,15 @@ signup_form="""
                 </td>
                 <td>
                     <input name="email" type="text" value="%(email)s" />
-                    <span class="error"></span>
+                </td>
+                <td>
+                    <div style="color: red">%(error_email)s</span>
                 </td>
             </tr>
         </table>
         <input type="submit" value="Submit">
     </form>
-    """ % {"error": error, "username":username, "email":email}
+    """ % substitions
 
 
 
@@ -89,11 +97,10 @@ page_footer = """
 class Index(webapp2.RequestHandler):
     #print header and form
     def get(self):
-        main_content = page_header + signup_form + error + page_footer
+        main_content = page_header + render_signup_form({"username": "", "password": "", "verify": "", "email": "", "error_username":"", "error_password": "", "error_verify": "", "error_email": ""}) + page_footer
         self.response.write(main_content)
 
 class Signup(webapp2.RequestHandler):
-
     #take in data
     def post(self):
         username = self.request.get("username")
@@ -105,19 +112,61 @@ class Signup(webapp2.RequestHandler):
         username = cgi.escape(username, quote=True)
         password = cgi.escape(password, quote=True)
         verify = cgi.escape(verify, quote=True)
-        email = cgi.escape(email,quote=True)
+        email = cgi.escape(email, quote=True)
+
+        #assign error messages
+        error_username = ""
+        error_password= ""
+        error_verify = ""
+        error_email = ""
+        error_present = False
+
+        #regex data
+        USER_RE = re.compile(r"^[a-zA-Z0-9_]{3,20}$")
+        def valid_username(username):
+            return username and USER_RE.match(username)
+
+        PASS_RE = re.compile(r"^.{3,20}$")
+        def valid_password(password):
+            return password and PASS_RE.match(password)
+
+        EMAIL_RE = re.compile(r'^[\S]+@[\S]+\.[\S]+$')
+        def valid_email(email):
+            return not email or EMAIL_RE.match(email)
 
 
         #error no user name
-        if username == "":
-            global error
-            error = "That's not a valid username"
-            self.response.write(page_header + signup_form + page_footer)
-            #getting blank form
+        if not valid_username(username):
+            error_username = "That's not a valid username"
+            error_present = True
+
+        if not valid_password(password):
+            error_password = "No password submitted, please enter a password"
+            error_present = True
+
+        if password != verify:
+            error_verify = "Passwords don't match"
+            error_present = True
+
+        if not valid_email(email):
+            error_email = "That's not a valid email"
+            error_present = True
+
+        if error_present:
+            self.response.write(render_signup_form({"username": username, "password": "" , "verify": "", "email": email, "error_username": error_username, "error_password": error_password, "error_verify": error_verify, "error_email": error_email}))
+        else:
+            self.redirect('/welcome?username='+ username)
+
+class Welcome(webapp2.RequestHandler):
+    def get(self):
+        username = self.request.get("username")
+
+        self.response.write('<h1>Welcome ' + username + '!</h1>')
 
 
 
 app = webapp2.WSGIApplication([
     ('/', Index),
-    ('/signup', Signup)
+    ('/signup', Signup),
+    ('/welcome', Welcome)
 ], debug=True)
